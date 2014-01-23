@@ -1,0 +1,30 @@
+#!/system/bin/sh
+
+#################################################################################
+# Params:
+LOG_SOURCE="extapps"
+LOG_VERBOSE="disable"
+LOG_DEBUG="enable"
+
+PROPERTY_FOLDER="/data/property"
+
+SD_EXT_DEVICE="/dev/block/mmcblk0p2"
+SD_EXT_FOLDER="/sd-ext"
+SD_EXT_FSTYPE="ext4"
+SD_EXT_MOUNT_OPTIONS="rw,nosuid,nodev,noatime,nodiratime,commit=15,barrier=1,stripe=64,data=ordered,noauto_da_alloc"
+
+SD_EXT_NEED_MOUNT="true"
+SD_EXT_IS_MOUNT="false"
+
+SDEXT_BIND_APP="enable"
+SDEXT_BIND_APP_ASEC="enable"
+SDEXT_BIND_APP_LIB="enable"
+SDEXT_BIND_APP_PRIVATE="enable"
+SDEXT_BIND_DALVIK_CACHE="enable"
+
+SDEXT_EXTAPPS="extapps gapps"
+
+#################################################################################
+# used props:
+#   persist.extapps.sdext.forcecheck -> [ done | true | false ]
+

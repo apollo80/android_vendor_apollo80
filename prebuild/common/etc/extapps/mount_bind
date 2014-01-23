@@ -1,0 +1,48 @@
+#!/system/bin/sh
+
+mount_bind() {
+    # Global Vars:
+    #   $busybox -> /system/xbin/busybox
+    #
+    # Params:
+    #   $1 source folder
+    #   $2 result folder
+
+    local sourceFolder
+    local resultFolder
+    local owner
+    local group
+    local permition
+
+    sourceFolder=$1
+    resultFolder=$2
+    owner=$3
+    group=$4
+    permition=$5
+
+    LogD "call mount_bind(): $sourceFolder -> $resultFolder ( $owner:$group $permition )"
+
+    # check exist moved directory
+    if [ -d $sourceFolder.moved ]; then
+        $busybox rm -rf $sourceFolder
+        $busybox mv $sourceFolder.moved $sourceFolder
+    fi
+
+    # make sure source and result directories exist
+    if [ ! -d $sourceFolder ]; then
+        $busybox mkdir -p $sourceFolder
+    fi
+
+    if [ ! -d $resultFolder ]; then
+        $busybox mkdir -p $resultFolder
+    fi
+
+
+    $busybox chown $owner:$group $sourceFolder
+    $busybox chmod $permition $sourceFolder
+    $busybox chown $owner:$group $resultFolder
+    $busybox chmod $permition $resultFolder
+
+    $busybox mount --bind $sourceFolder $resultFolder
+    LogI "bind mount $sourceFolder -> $resultFolder (errCode=$?)"
+}

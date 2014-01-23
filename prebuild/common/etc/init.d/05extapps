@@ -1,0 +1,79 @@
+#!/system/bin/sh
+#####################
+# @lastchange 20130114
+# @version 0.0.1
+#####################
+# This file is part of the Mounts2SD Project: https://github.com/apollo80/mounts2sd
+#
+# Copyright (c) 2013 Dikarev Evgeny (aka apollo80)
+#
+# Mounts2SD is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Mounts2SD is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Mounts2SD. If not, see <http://www.gnu.org/licenses/>
+#####################
+
+. /system/etc/extapps/log
+. /system/etc/extapps/default_paths
+. /system/etc/extapps/default_params
+
+if [ -f $PROPERTY_FOLDER/persist.extapps.vars ]; then
+    . $PROPERTY_FOLDER/persist.extapps.vars
+fi
+
+if [ "$SD_EXT_NEED_MOUNT" = "true"  ]; then
+    LogD "include /system/etc/extapps/mount_sdext"
+    . /system/etc/extapps/mount_sdext
+    mountSdExt
+fi
+
+    LogD "include /system/etc/extapps/mount_bind"
+    . /system/etc/extapps/mount_bind
+
+if [ "$SDEXT_BIND_APP" = "enable" ]; then
+    LogI "Mount bind /sd-ext/app -> /data/app"
+    mount_bind /sd-ext/app /data/app system system 0771
+fi
+
+if [ "$SDEXT_BIND_APP_ASEC" = "enable" ]; then
+    LogI "Mount bind /sd-ext/app-asec -> /data/app-asec"
+    mount_bind /sd-ext/app-asec /data/app-asec root root 0700
+fi
+
+if [ "$SDEXT_BIND_APP_LIB" = "enable" ]; then
+    LogI "Mount bind /sd-ext/app-lib -> /data/app-lib"
+    mount_bind /sd-ext/app-lib /data/app-lib system system 0771
+fi
+
+if [ "$SDEXT_BIND_APP_PRIVATE" = "enable" ]; then
+    LogI "Mount bind /sd-ext/app-private -> /data/app-private"
+    mount_bind /sd-ext/app-private /data/app-private system system 0771
+fi
+
+if [ "$SDEXT_BIND_DALVIK_CACHE" = "enable" ]; then
+    LogI "Mount bind /sd-ext/dalvik-cache -> /data/dalvik-cache"
+    mount_bind /sd-ext/dalvik-cache /data/dalvik-cache system system 0771
+fi
+
+$busybix ln -s /sd-ext/dalvik-cache /cache/dalvik-cache
+LogD "errCode($?) ln -s /sd-ext/dalvik-cache /cache/dalvik-cache"
+
+if [ "$SDEXT_EXTAPPS" != "" ]; then
+    LogD "include /system/etc/extapps/makelink2system"
+    . /system/etc/extapps/makelink2system
+    for sdextApps in $SDEXT_EXTAPPS;
+    do
+        LogD "make links to /system for /sd-ext/$sdextApps"
+        makelink2system $sdextApps
+    done
+fi
+
+exit 0

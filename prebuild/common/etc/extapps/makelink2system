@@ -1,0 +1,92 @@
+#!/system/bin/sh
+
+makelink2system() {
+    # Global Vars
+    #   $busybox -> /system/xbin/busybox
+    #
+    # Params:                    (values for nexus one)
+    #   $1                    -> type extapps (known: extapps , gapps)
+    #   $SD_EXT_DEVICE        -> /dev/block/mmcblk0p2
+    #   $SD_EXT_FOLDER        -> /sd-ext
+
+    local extapps_root
+    local extapps_type
+    local files_to_link
+
+    extapps_type=$1
+    extapps_root="$SD_EXT_FOLDER/$extapps_type"
+
+    #############################################################################
+    # make sure sd-ext is mount
+    if [ "$SD_EXT_IS_MOUNT" != "true" ]; then
+        LogD "device $SD_EXT_DEVICE not mounted"
+        return
+    fi
+
+    # make sure its true extapps
+    if [ ! -f $extapps_root/.$extapps_type ]; then
+        LogD "file $extapps_root/.$extapps_type not found"
+        return
+    fi
+
+    $busybox mount -o rw,remount /system
+
+    #for app in $OLD_APPS; do
+    #    if [ -f /system/app/${app}.apk ]; then
+    #        $BB rm -f /system/app/${app}.apk
+    #        $logI "Removed $app"
+    #    fi
+    #done
+
+    files_to_link=$($busybox find $extapps_root -type f ! -name .$extapps_type -print)
+    #LogD "Found extapps files: $files_to_link"
+    for extapps_file in $files_to_link;
+    do
+        local srcfile
+        local dstfile
+        local linkdir
+
+        srcfile=$extapps_file
+        dstlink=${extapps_file#$extapps_root}
+        linkdir=$($busybox dirname $dstlink)
+
+        # create directory if not exist
+        if [ ! -d $linkdir ]; then
+            $busybox mkdir -p $linkdir
+            LogI "Create directory (errCode=$?)  $linkdir"
+        fi
+
+        # create link if not exist
+        if [ ! -h $dstlink ]; then
+            $busybox ln -s $srcfile $dstlink
+            #$busybox chown root:root $srcfile
+            #$busybox chmod 644 $srcfile
+            LogI "Created (errCode=$?) $srcfile -> $dstlink"
+        else
+            LogI "File or link $dstlink already exist"
+        fi
+    done
+
+    files_to_link=$($busybox find $extapps_root -type f \( -name *.apk -o -name *.jar \) -print)
+    for extapps_file in $files_to_link;
+    do
+        local srcfile
+        local dstfile
+
+        srcfile="$(echo ${extapps_file#$extapps_root/} | sed 's/\//@/g')@classes.dex"
+        dstlink="/data/dalvik-cache/$(echo ${extapps_file#/} | sed 's/\//@/g')@classes.dex"
+
+        # create link if not exist
+        if [ ! -h $dstlink ]; then
+            #LogI "try create link $srcfile <- $dstlink"
+            $busybox ln -s $srcfile $dstlink
+            #$busybox chown root:root $srcfile
+            #$busybox chmod 644 $srcfile
+            LogI "Created (errCode=$?) $srcfile <- $dstlink"
+        else
+            LogI "File or link $dstlink already exist"
+        fi
+    done
+
+    $busybox mount -o ro,remount /system
+}

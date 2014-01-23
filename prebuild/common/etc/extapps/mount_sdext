@@ -1,0 +1,90 @@
+#!/system/bin/sh
+
+mountSdExt() {
+    # Global Vars:
+    #   $busybox -> /system/xbin/busybox
+    #   $e2fsck  -> /system/bin/e2fsck
+    #   $tune2fs -> /system/bin/tune2fs
+    #
+    # Params:                    (values for nexus one)
+    #   $SD_EXT_DEVICE        -> /dev/block/mmcblk0p2
+    #   $SD_EXT_FOLDER        -> /sd-ext
+    #   $SD_EXT_FSTYPE        -> ext4
+    #   $SD_EXT_MOUNT_OPTIONS -> defaults,data=writeback,nobh,noatime,nodiratime,noauto_da_alloc
+    #   $SD_EXT_IS_MOUNT      -> (out) [ true | false ]
+    #
+    # Props:
+    #   persist.extapps.sdext.forcecheck -> [ done | true | false ]
+
+    #LogD "call mountSdExt()"
+    #LogD "    \$busybox -> $busybox"
+    #LogD "    \$e2fsck  -> $e2fsck"
+    #LogD "    \$tune2fs -> $tune2fs"
+    #LogD "Params:"
+    #LogD "    \$SD_EXT_DEVICE        -> $SD_EXT_DEVICE"
+    #LogD "    \$SD_EXT_FOLDER        -> $SD_EXT_FOLDER"
+    #LogD "    \$SD_EXT_FSTYPE        -> $SD_EXT_FSTYPE"
+    #LogD "    \$SD_EXT_MOUNT_OPTIONS -> $SD_EXT_MOUNT_OPTIONS"
+    #LogD "    \$SD_EXT_IS_MOUNT      -> $SD_EXT_IS_MOUNT"
+    #LogD ""
+
+    #############################################################################
+    # make sure its not already mounted (ie via init.rc)
+    if ! awk -vBLK="$SD_EXT_DEVICE" '$1 == BLK { exit 1; }' /proc/mounts; then
+        LogD "\t$SD_EXT_DEVICE already mount -> exit"
+        return
+    fi
+
+
+    SD_EXT_IS_MOUNT="false"
+    setprop persist.extapps.sdext_mount $SD_EXT_IS_MOUNT
+
+    #############################################################################
+    # make sure partition exists and folder exists
+    if [ ! -b $SD_EXT_DEVICE ]; then
+        LogD "device $SD_EXT_DEVICE not exist"
+        return
+    fi
+    if [ ! -z $SD_EXT_FOLDER ]; then
+        $busybox mkdir -p $SD_EXT_FOLDER
+    fi
+
+
+    #############################################################################
+    # Check for errors
+    if [ -x $e2fsck ]; then
+        if [ "$(getprop persist.extapps.sdext_forcecheck)" = "true" ]; then
+            LogD "Check forces for error device $SD_EXT_DEVICE"
+            $e2fsck -fy $SD_EXT_DEVICE
+            e2fsk_exitcode=$?
+            setprop persist.extapps.sdext_forcecheck "retValue=$e2fsk_exitcode"
+        else
+            LogD "Check for error device $SD_EXT_DEVICE"
+            $e2fsck -p $SD_EXT_DEVICE
+            e2fsk_exitcode=$?
+        fi
+    else
+        e2fsk_exitcode=0
+    fi
+    LogD "Check device ret code eq $e2fsk_exitcode"
+
+    # Sdcard tweak: remove journal if present
+    #if [ -x "$TUNE2FS" -a "$($TUNE2FS -l $SD_EXT_DEVICE | grep -o has_journal)" ]; then
+    #    $TUNE2FS -O ^has_journal $SD_EXT_DEVICE >/dev/null
+    #    fi
+    #fi
+
+    # Mount: options tuned for sdcards
+    if [ $e2fsk_exitcode -le 2 ]; then
+        LogD "try call $busybox mount -t ext4 -o $SD_EXT_MOUNT_OPTIONS $SD_EXT_DEVICE $SD_EXT_FOLDER"
+        $busybox mount -t ext4 -o $SD_EXT_MOUNT_OPTIONS $SD_EXT_DEVICE $SD_EXT_FOLDER
+        sdextMount_exitcode=$?
+
+        LogD "sdextMount_exitcode = $sdextMount_exitcode"
+        if [ $sdextMount_exitcode -eq 0 ]; then
+            SD_EXT_IS_MOUNT=true
+        fi
+    fi
+    setprop persist.extapps.sdext_mount $SD_EXT_IS_MOUNT
+    #LogD "call mountSdExt() finish"
+}

@@ -1,0 +1,41 @@
+#!/system/bin/sh
+
+# Global Vars:
+#   $log -> /system/bin/log
+#
+# Params:
+#   $LOG_SOURCE -> "extapps"
+
+
+## Info
+#  v    Verbose (show all possibly useless logs, default level)
+#  d    Debug (show all reasonable debug logs)
+#  i    Info (show expected logs for regular usage)
+#  w    Warn (show possible issues that are not yet errors)
+#  e    Error (show issues that have caused errors)
+#  f    Fatal (show issues that are fatal to runtime and will often result in rebooting)
+
+LogV() {
+    if [ "$LOG_VERBOSE" = "enable" ]; then
+        $log -p v -t $LOG_SOURCE "$@"
+    fi
+}
+
+LogD() {
+    if [ "$LOG_DEBUG" = "enable" ]; then
+        $log -p d -t $LOG_SOURCE "$@"
+    fi
+}
+
+LogI() {
+    $log -p i -t $LOG_SOURCE "$@"
+}
+
+LogW() {
+    $log -p w -t $LOG_SOURCE "$@"
+}
+
+
+LogE() {
+    $log -p e -t $LOG_SOURCE "$@"
+}
