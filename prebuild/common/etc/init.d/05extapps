@@ -22,11 +22,11 @@
 #####################
 
 . /system/etc/extapps/log
-. /system/etc/extapps/default_paths
-. /system/etc/extapps/default_params
+. /system/etc/extapps/enviroment
+. /system/etc/extapps/settings
 
-if [ -f $PROPERTY_FOLDER/persist.extapps.vars ]; then
-    . $PROPERTY_FOLDER/persist.extapps.vars
+if [ -f $PROPERTY_FOLDER/persist.extapps.settings ]; then
+    . $PROPERTY_FOLDER/persist.extapps.settings
 fi
 
 if [ "$SD_EXT_NEED_MOUNT" = "true"  ]; then

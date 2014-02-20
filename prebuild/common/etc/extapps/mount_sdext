@@ -45,7 +45,7 @@ mountSdExt() {
         LogD "device $SD_EXT_DEVICE not exist"
         return
     fi
-    if [ ! -z $SD_EXT_FOLDER ]; then
+    if [ ! -d $SD_EXT_FOLDER ]; then
         $busybox mkdir -p $SD_EXT_FOLDER
     fi
 
