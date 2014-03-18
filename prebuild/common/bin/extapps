@@ -1,0 +1,128 @@
+#!/system/bin/sh
+
+log="/system/bin/log"
+
+#################################################################################
+# load default settings
+. /system/etc/extapps/log
+. /system/etc/extapps/settings
+#################################################################################
+
+Usage()
+{
+    local progName
+    progName=$1
+
+    echo "Usage:"
+    echo "\t$progName --bind-list"
+    echo "\t$progName --bind <app|app-sec|app-lib|app-private|dalvik-cache|data> <enable|disable|default>"
+    echo "\t$progName --log [ <debug|verbose> <enable|disable|default> ]"
+}
+
+updateBoolVal()
+{
+    local propName
+    local propValue
+
+    propName=$1
+    propValue=$2
+
+    echo "need set $propName  -> $propValue"
+    case $propValue in
+        enable | disable )
+            setprop $propName "$propValue"
+            ;;
+
+        default )
+            rm -f $PROPERTY_FOLDER/$propName
+            ;;
+
+        * )
+            echo "Error: $propValue is incorrect parameter. Must be either \"enable\" or \"disable\" or \"default\"."
+            exit 1
+            ;;
+    esac
+}
+
+
+#################################################################################
+# Main
+
+if [ $# -eq 0 ]; then
+    Usage $0
+    exit 0
+fi
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+if [ $# -eq 1 ]; then
+    case "$1" in
+        --bind-list )
+            echo "\tbind /sd-ext/app          -> /data/app          : $SDEXT_BIND_APP"
+            echo "\tbind /sd-ext/app-asec     -> /data/app-asec     : $SDEXT_BIND_APP_ASEC"
+            echo "\tbind /sd-ext/app-lib      -> /data/app-lib      : $SDEXT_BIND_APP_LIB"
+            echo "\tbind /sd-ext/app-private  -> /data/app-private  : $SDEXT_BIND_APP_PRIVATE"
+            echo "\tbind /sd-ext/dalvik-cache -> /data/dalvik-cache : $SDEXT_BIND_DALVIK_CACHE"
+            echo "\tbind /sd-ext/data         -> /data/data         : $SDEXT_BIND_DATA"
+            ;;
+
+        --log )
+            echo "\tlog-debug   : $LOG_DEBUG"
+            echo "\tlog-verbose : $LOG_VERBOSE"
+            ;;
+        * )
+            Usage $0
+            ;;
+    esac
+    exit 0
+fi
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+if [ $# -eq 2 ]; then
+    Usage $0
+    exit 0
+fi
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+if [ $# -eq 3 ]; then
+    case "$1" in
+        --bind )
+            case "$2" in
+                app | app-asec | app-lib |app-private | dalvik-cache | data )
+                    updateBoolVal persist.bind.$2 $3
+                    ;;
+                *)
+                    Usage $0
+                    ;;
+            esac
+            exit 0
+            ;;
+
+        --log )
+            case "$2" in
+                debug )
+                    updateBoolVal persist.sdext.log.$2 $3
+                    ;;
+                verbose )
+                    updateBoolVal persist.sdext.log.$2 $3
+                    ;;
+                *)
+                    Usage $0
+                    ;;
+            esac
+            exit 0
+            ;;
+
+        *)
+            echo "Error: unknown paramater $1"
+            exit 1
+            ;;
+    esac
+fi
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+if [ $# -gt 3 ]; then
+    Usage $0
+    exit 0
+fi
+
+#################################################################################

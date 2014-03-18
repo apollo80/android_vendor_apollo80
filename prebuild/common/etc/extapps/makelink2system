@@ -6,20 +6,20 @@ makelink2system() {
     #
     # Params:                    (values for nexus one)
     #   $1                    -> type extapps (known: extapps , gapps)
-    #   $SD_EXT_DEVICE        -> /dev/block/mmcblk0p2
-    #   $SD_EXT_FOLDER        -> /sd-ext
+    #   $SDEXT_DEVICE        -> /dev/block/mmcblk0p2
+    #   $SDEXT_FOLDER        -> /sd-ext
 
     local extapps_root
     local extapps_type
     local files_to_link
 
     extapps_type=$1
-    extapps_root="$SD_EXT_FOLDER/$extapps_type"
+    extapps_root="$SDEXT_FOLDER/$extapps_type"
 
     #############################################################################
     # make sure sd-ext is mount
-    if [ "$SD_EXT_IS_MOUNT" != "true" ]; then
-        LogD "device $SD_EXT_DEVICE not mounted"
+    if [ "$SDEXT_IS_MOUNT" != "true" ]; then
+        LogF "device $SDEXT_DEVICE not mounted"
         return
     fi
 
@@ -30,13 +30,6 @@ makelink2system() {
     fi
 
     $busybox mount -o rw,remount /system
-
-    #for app in $OLD_APPS; do
-    #    if [ -f /system/app/${app}.apk ]; then
-    #        $BB rm -f /system/app/${app}.apk
-    #        $logI "Removed $app"
-    #    fi
-    #done
 
     files_to_link=$($busybox find $extapps_root -type f ! -name .$extapps_type -print)
     #LogD "Found extapps files: $files_to_link"
@@ -78,10 +71,7 @@ makelink2system() {
 
         # create link if not exist
         if [ ! -h $dstlink ]; then
-            #LogI "try create link $srcfile <- $dstlink"
             $busybox ln -s $srcfile $dstlink
-            #$busybox chown root:root $srcfile
-            #$busybox chmod 644 $srcfile
             LogI "Created (errCode=$?) $srcfile <- $dstlink"
         else
             LogI "File or link $dstlink already exist"

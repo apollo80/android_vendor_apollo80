@@ -13,36 +13,148 @@ mount_bind() {
     local owner
     local group
     local permition
+    local overwrite
 
     sourceFolder=$1
     resultFolder=$2
     owner=$3
     group=$4
     permition=$5
+    enableFlag=$6
+    overwrite=$7
 
-    LogD "call mount_bind(): $sourceFolder -> $resultFolder ( $owner:$group $permition )"
+    LogI "Mount bind $sourceFolder -> $resultFolder ( $owner:$group $permition ) -> $enableFlag"
 
-    # check exist moved directory
-    if [ -d $sourceFolder.moved ]; then
-        $busybox rm -rf $sourceFolder
-        $busybox mv $sourceFolder.moved $sourceFolder
+    #############################################################################
+    # make sure sd-ext is mount
+    if [ "$SDEXT_IS_MOUNT" != "true" ]; then
+        LogF "device $SDEXT_DEVICE not mounted"
+        return
     fi
 
-    # make sure source and result directories exist
-    if [ ! -d $sourceFolder ]; then
-        $busybox mkdir -p $sourceFolder
-    fi
-
+    # make sure result directories exist
     if [ ! -d $resultFolder ]; then
         $busybox mkdir -p $resultFolder
     fi
-
-
-    $busybox chown $owner:$group $sourceFolder
-    $busybox chmod $permition $sourceFolder
     $busybox chown $owner:$group $resultFolder
     $busybox chmod $permition $resultFolder
 
-    $busybox mount --bind $sourceFolder $resultFolder
-    LogI "bind mount $sourceFolder -> $resultFolder (errCode=$?)"
+
+    if [ "$enableFlag" = "enable" ]; then
+
+        # make sure source directories exist
+        if [ ! -d $sourceFolder ]; then
+            $busybox mkdir -p $sourceFolder
+        fi
+
+        $busybox chown $owner:$group $sourceFolder
+        $busybox chmod $permition $sourceFolder
+
+        ## check exist moved directory
+        #if [ -d $sourceFolder.moved ]; then
+        #    $busybox rm -rf $sourceFolder
+        #    $busybox mv $sourceFolder.moved $sourceFolder
+        #fi
+
+        # move result directory if it not empty
+        local filesCount;
+        filesCount=$(ls $resultFolder | wc -l)
+        if [ $filesCount -ne 0 ]; then
+            if [ $(pgrep zygote | wc -l) -ne 0 ]; then
+                LogI "need to move the contents of a directory $resultFolder -> need stop zygote process"
+                stop zygote;
+            fi
+            LogD "move directory $resultFolder -> $resultFolder.moved"
+            $busybox mv $resultFolder $resultFolder.moved
+            $busybox mkdir -p $resultFolder
+        fi
+
+        $busybox mount --bind $sourceFolder $resultFolder
+        errCode=$?
+        LogI "bind mount $sourceFolder -> $resultFolder (errCode=$errCode)"
+
+        if [ $errCode -eq 0 ]; then
+            setprop persist.bind.mounted "true"
+
+            # check exist moved directory
+            if [ -d $resultFolder.moved ]; then
+                LogD "move data from directory  $resultFolder.moved to $resultFolder:"
+                for fsobject in `ls $resultFolder.moved/`;
+                do
+                    if [ -f $resultFolder/$fsobject ]; then
+                        if [ "$overwrite" = "true" ]; then
+                            LogD "    remove $resultFolder/$fsobject"
+                            $busybox rm -rf $resultFolder/$fsobject
+
+                            LogD "    move $resultFolder.moved/$fsobject to $resultFolder/$fsobject"
+                            $busybox mv $resultFolder.moved/$fsobject $resultFolder/$fsobject
+                        else
+                            LogD "    remove $resultFolder.moved/$fsobject"
+                            $busybox rm -rf $resultFolder.moved/$fsobject
+                        fi
+                    else
+                        LogD "    move $resultFolder.moved/$fsobject to $resultFolder/$fsobject"
+                        $busybox mv $resultFolder.moved/$fsobject $resultFolder/$fsobject
+                    fi
+                done
+
+                LogD "delete directory $resultFolder.moved"
+                $busybox rmdir $resultFolder.moved
+            fi
+        else
+            if [ -d $resultFolder.moved ]; then
+                LogD "restore $resultFolder.moved to $resultFolder"
+                $busybox mv $resultFolder.moved $resultFolder
+            fi
+        fi
+
+    fi
+
+
+    if [ "$enableFlag" = "disable" ]; then
+        ##
+        ## FIXME: need check free space on resultFolder device
+        ##
+
+        if [ -d $sourceFolder ]; then
+
+            local filesCount;
+            filesCount=$(ls $sourceFolder | wc -l)
+
+            if [ $filesCount -ne 0 ]; then
+                if [ "$NEED_RESTART_ZYGOTE" = "false" ]; then
+                    LogI "need to move the contents of a directory $sourceFolder -> need stop zygote process"
+                    stop zygote;
+                    NEED_RESTART_ZYGOTE="true"
+                fi
+
+                LogD "move data from directory  $sourceFolder to $resultFolder"
+                for fsobject in `ls $sourceFolder`;
+                do
+                    if [ -f $sourceFolder/$fsobject ]; then
+                        if [ "$overwrite" = "true" ]; then
+                            LogD "    remove $resultFolder/$fsobject"
+                            $busybox rm -rf $resultFolder/$fsobject
+
+                            LogD "    move $sourceFolder/$fsobject $resultFolder/$fsobject"
+                            $busybox mv $sourceFolder/$fsobject $resultFolder/$fsobject
+                        else
+                            LogD "    remove $sourceFolder/$fsobject"
+                            $busybox rm -rf $sourceFolder/$fsobject
+                        fi
+                    else
+                        LogD "    move $sourceFolder/$fsobject to $resultFolder/$fsobject"
+                        $busybox mv $sourceFolder/$fsobject $resultFolder/$fsobject
+                    fi
+                done
+
+                LogD "delete directory $sourceFolder"
+                $busybox rmdir $sourceFolder
+            fi
+        fi
+
+        if [ "$(getprop persist.bind.mounted)" = "none" ]; then
+            setprop persist.bind.mounted "false"
+        fi
+    fi
 }

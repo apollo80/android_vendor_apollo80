@@ -1,8 +1,0 @@
-#!/system/bin/sh
-
-#################################################################################
-# Global Vars:
-busybox="/system/xbin/busybox"
-e2fsck="/system/bin/e2fsck"
-tune2fs="/system/bin/tune2fs"
-log="/system/bin/log"

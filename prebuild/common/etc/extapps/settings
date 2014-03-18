@@ -8,23 +8,61 @@ LOG_DEBUG="enable"
 
 PROPERTY_FOLDER="/data/property"
 
-SD_EXT_DEVICE="/dev/block/mmcblk0p2"
-SD_EXT_FOLDER="/sd-ext"
-SD_EXT_FSTYPE="ext4"
-SD_EXT_MOUNT_OPTIONS="rw,nosuid,nodev,noatime,nodiratime,commit=15,barrier=1,stripe=64,data=ordered,noauto_da_alloc"
+SDEXT_DEVICE="/dev/block/mmcblk0p2"
+SDEXT_FOLDER="/sd-ext"
+SDEXT_FSTYPE="ext4"
+SDEXT_MOUNT_OPTIONS="rw,nosuid,nodev,noatime,nodiratime,commit=15,barrier=1,stripe=64,data=ordered,noauto_da_alloc"
 
-SD_EXT_NEED_MOUNT="true"
-SD_EXT_IS_MOUNT="false"
+SDEXT_IS_MOUNT="false"
 
 SDEXT_BIND_APP="enable"
 SDEXT_BIND_APP_ASEC="enable"
 SDEXT_BIND_APP_LIB="enable"
 SDEXT_BIND_APP_PRIVATE="enable"
 SDEXT_BIND_DALVIK_CACHE="enable"
+SDEXT_BIND_DATA="disable"
 
 SDEXT_EXTAPPS="extapps gapps"
 
 #################################################################################
 # used props:
-#   persist.extapps.sdext.forcecheck -> [ done | true | false ]
+#   persist.sdext.sdext.forcecheck -> [ done | true | false ]
 
+#--------------------------------------------------------------------------------
+if [ -n "$(getprop ro.sdext.device)"        ]; then SDEXT_DEVICE=$(getprop ro.sdext.device); fi
+if [ -n "$(getprop ro.sdext.folder)"        ]; then SDEXT_FOLDER=$(getprop ro.sdext.folder); fi
+if [ -n "$(getprop ro.sdext.fstype)"        ]; then SDEXT_FSTYPE=$(getprop ro.sdext.fstype); fi
+if [ -n "$(getprop ro.sdext.mount-options)" ]; then SDEXT_MOUNT_OPTIONS=$(getprop ro.sdext.mount-options); fi
+#--------------------------------------------------------------------------------
+
+if [ -n "$(getprop persist.sdext.log.debug)"   ]; then LOG_DEBUG=$(getprop persist.sdext.log.debug); fi
+if [ -n "$(getprop persist.sdext.log.verbose)" ]; then LOG_VERBOSE=$(getprop persist.sdext.log.verbose); fi
+
+if [ -n "$(getprop persist.sdext.device)"        ]; then SDEXT_DEVICE=$(getprop persist.sdext.device); fi
+if [ -n "$(getprop persist.sdext.folder)"        ]; then SDEXT_FOLDER=$(getprop persist.sdext.folder); fi
+if [ -n "$(getprop persist.sdext.fstype)"        ]; then SDEXT_FSTYPE=$(getprop persist.sdext.fstype); fi
+if [ -n "$(getprop persist.sdext.mount-options)" ]; then SDEXT_MOUNT_OPTIONS=$(getprop persist.sdext.mount-options); fi
+
+if [ -n "$(getprop persist.bind.app)"          ]; then SDEXT_BIND_APP=$(getprop persist.bind.app); fi
+if [ -n "$(getprop persist.bind.app-asec)"     ]; then SDEXT_BIND_APP_ASEC=$(getprop persist.bind.app-asec); fi
+if [ -n "$(getprop persist.bind.app-lib)"      ]; then SDEXT_BIND_APP_LIB=$(getprop persist.bind.app-lib); fi
+if [ -n "$(getprop persist.bind.app-private)"  ]; then SDEXT_BIND_APP_PRIVATE=$(getprop persist.bind.app-private); fi
+if [ -n "$(getprop persist.bind.dalvik-cache)" ]; then SDEXT_BIND_DALVIK_CACHE=$(getprop persist.bind.dalvik-cache); fi
+if [ -n "$(getprop persist.bind.data)"         ]; then SDEXT_BIND_DATA=$(getprop persist.bind.data); fi
+
+
+if [ "$LOG_DEBUG" = "enable" ]; then
+    LogD "Configuration:"
+    LogD "    SDEXT_DEVICE            = ${SDEXT_DEVICE}"
+    LogD "    SDEXT_FOLDER            = ${SDEXT_FOLDER}"
+    LogD "    SDEXT_FSTYPE            = ${SDEXT_FSTYPE}"
+    LogD "    SDEXT_MOUNT_OPTIONS     = ${SDEXT_MOUNT_OPTIONS}"
+    LogD "    SDEXT_BIND_APP          = ${SDEXT_BIND_APP}"
+    LogD "    SDEXT_BIND_APP_ASEC     = ${SDEXT_BIND_APP_ASEC}"
+    LogD "    SDEXT_BIND_APP_LIB      = ${SDEXT_BIND_APP_LIB}"
+    LogD "    SDEXT_BIND_APP_PRIVATE  = ${SDEXT_BIND_APP_PRIVATE}"
+    LogD "    SDEXT_BIND_DALVIK_CACHE = ${SDEXT_BIND_DALVIK_CACHE}"
+    LogD "    SDEXT_BIND_DATA         = ${SDEXT_BIND_DATA}"
+    LogD "    LOG_DEBUG               = ${LOG_DEBUG}"
+    LogD "    LOG_VERBOSE             = ${LOG_VERBOSE}"
+fi

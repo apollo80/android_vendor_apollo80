@@ -39,3 +39,7 @@ LogW() {
 LogE() {
     $log -p e -t $LOG_SOURCE "$@"
 }
+
+LogF() {
+    $log -p f -t $LOG_SOURCE "$@"
+}
